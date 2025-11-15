@@ -1,0 +1,6 @@
+.venv
+.vscode
+/output
+/scraper/__pycache__/
+/scraper/collectors/__pycache__/
+/craw/__pycache__/
