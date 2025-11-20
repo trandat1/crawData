@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Iterable, Tuple
 
 
@@ -80,6 +81,15 @@ def load_today_results(
     except Exception:
         pass
     return []
+
+def convert_paths(obj):
+    if isinstance(obj, Path):
+        return str(obj)
+    if isinstance(obj, dict):
+        return {k: convert_paths(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [convert_paths(x) for x in obj]
+    return obj
 
 
 def save_results(

@@ -1,9 +1,10 @@
-import os
 from datetime import datetime
+from pathlib import Path
+import os
 
-# === Default configuration ===
+# === Config mặc định ===
 DEBUGGER_ADDRESS = "127.0.0.1:9222"
-BASE_URL = "https://batdongsan.com.vn/ban-dat"
+BASE_URL = "https://batdongsan.com.vn/ban-dat"   # hoặc list URL
 MAX_PAGES = 5
 MAX_ITEMS_PER_PAGE = 20
 PAGE_COOLDOWN_SECONDS = 5 * 60
@@ -13,21 +14,44 @@ LIST_SCROLL_STEPS = 6
 DETAIL_SCROLL_STEPS = 6
 
 SCREENSHOT_DIR = "screenshots_blocked"
-OUTPUT_DIR = "output"
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+OUTPUT_DIR = PROJECT_ROOT / "output"
+OUTPUT_DIR_FILTER = OUTPUT_DIR / "output_filtered"
 
 
 def ensure_directories():
     """Create top-level directories required for scraping."""
-    os.makedirs(SCREENSHOT_DIR, exist_ok=True)
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    for d in [SCREENSHOT_DIR, OUTPUT_DIR]:
+        os.makedirs(d, exist_ok=True)
 
 
-def prepare_output_paths(today: datetime | None = None):
-    """Return (today, month_folder, results_file) and ensure directories exist."""
-    ensure_directories()
+def sanitize_filename(value: str) -> str:
+    """Convert filter values to safe filename parts."""
+    return str(value).replace("/", "_").replace("\\", "_").replace(" ", "_")
+
+
+def prepare_output_paths(today: datetime | None = None, filters: dict | None = None):
     today = today or datetime.now()
-    month_folder = os.path.join(OUTPUT_DIR, today.strftime("%Y-%m"))
-    os.makedirs(month_folder, exist_ok=True)
-    results_file = os.path.join(month_folder, f"{today.strftime('%Y-%m-%d')}.json")
-    return today, month_folder, results_file
 
+    # Nếu có filter → output vào folder FILTER
+    if filters:
+        filtered = "_".join(
+            f"{key}_{sanitize_filename(v)}"
+            for key, v in filters.items() if v
+        )
+
+        month_folder = OUTPUT_DIR_FILTER / today.strftime("%Y-%m")
+        month_folder.mkdir(parents=True, exist_ok=True)
+
+        results_file = month_folder / f"{today.strftime('%Y-%m-%d')}_{filtered}.json"
+        return today, month_folder, results_file
+
+    # Nếu không có filter → output mặc định
+    ensure_directories()
+
+    month_folder = OUTPUT_DIR / today.strftime("%Y-%m")
+    month_folder.mkdir(parents=True, exist_ok=True)
+
+    results_file = month_folder / f"{today.strftime('%Y-%m-%d')}.json"
+    return today, month_folder, results_file

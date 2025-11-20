@@ -7,6 +7,7 @@ from typing import Callable
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
+from .. import utils
 
 
 def clean_image_url(url: str | None):
@@ -25,31 +26,64 @@ def _scroll_detail(driver, steps: int, human_sleep: Callable[[float, float], Non
 
 
 def _extract_short_info(driver):
-    price = ""
-    area = ""
-    price_per_m2 = ""
+    price = ""           # giá tổng (ext)
+    area = ""            # diện tích
+    price_per_m2 = ""    # giá/m2
+
+    per_m_pattern = re.compile(r'(triệu|tỷ|đ|dong|vnđ).*(/m2|/m²|/m)', re.IGNORECASE)
+    area_pattern = re.compile(r'\b[0-9]+(?:[.,][0-9]+)?\s*(m²|m2|m)\b', re.IGNORECASE)
+
     try:
-        short_items = driver.find_elements(By.CSS_SELECTOR, ".re__pr-short-info .re__pr-short-info-item")
-        for si in short_items:
+        items = driver.find_elements(By.CSS_SELECTOR, ".re__pr-short-info .re__pr-short-info-item")
+        for it in items:
             try:
                 label = ""
                 try:
-                    label = si.find_element(By.CSS_SELECTOR, ".re__pr-short-info-item-title").text.strip().lower()
-                except Exception:
-                    label = si.get_attribute("innerText").strip().lower()
-                value = si.find_element(By.CSS_SELECTOR, ".re__pr-short-info-item-value").text.strip()
+                    label = it.find_element(By.CSS_SELECTOR, "span.title").text.strip().lower()
+                except:
+                    label = (it.get_attribute("innerText") or "").splitlines()[0].strip().lower()
 
-                if not price and ("giá" in label and "m²" not in label and "m2" not in label):
-                    price = value
-                if not area and ("diện tích" in label or label.startswith("dt") or "m²" in value or "m2" in value):
-                    area = value
-                if not price_per_m2 and ("giá/m" in label or "giá/m²" in label or "giá/m2" in label):
-                    price_per_m2 = value
-            except Exception:
+                # value
+                try:
+                    value = it.find_element(By.CSS_SELECTOR, "span.value").text.strip()
+                except:
+                    parts = (it.get_attribute("innerText") or "").splitlines()
+                    value = parts[1].strip() if len(parts) > 1 else ""
+
+                # ext = giá tổng
+                try:
+                    ext = it.find_element(By.CSS_SELECTOR, "span.ext").text.strip()
+                except:
+                    ext = ""
+
+                low_value = value.lower()
+                low_label = label.lower()
+
+                # ---- AREA ----
+                # Ưu tiên kiểm tra label "diện tích" trước
+                if not area and (low_label.startswith("diện tích") or (not low_label.startswith("giá") and area_pattern.search(low_value))):
+                    m = area_pattern.search(value)
+                    area = m.group(0) if m else value
+
+                # ---- PRICE_PER_M2 ----
+                # Chỉ set nếu không phải là diện tích và có pattern giá/m²
+                if not price_per_m2 and not low_label.startswith("diện tích"):
+                    # Kiểm tra label có chứa "giá" hoặc value có pattern giá/m²
+                    if ("giá" in low_label and ("/m" in low_value or "m²" in low_value)) or per_m_pattern.search(low_value):
+                        price_per_m2 = value
+
+                # ---- PRICE (tổng) → EXT ----
+                if not price and ext:
+                    price = ext
+
+            except:
                 continue
-    except Exception:
+
+    except:
         pass
+
     return price, area, price_per_m2
+
 
 
 def _extract_specs(driver):
@@ -126,25 +160,51 @@ def _extract_phone(driver, wait, human_sleep: Callable[[float, float], None]):
 def _extract_map(driver, wait):
     map_coords = ""
     map_link = ""
+    map_dms = ""
 
     try:
-        iframe = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.re__pr-map iframe")))
-        map_link = iframe.get_attribute("src") or iframe.get_attribute("data-src") or ""
+        iframe = wait.until(EC.presence_of_element_located(
+            (By.CSS_SELECTOR, "div.re__pr-map iframe")
+        ))
 
+        map_link = iframe.get_attribute("src") or iframe.get_attribute("data-src") or ""
+        
+        if not map_link:
+            return "", "", ""
+
+        # Pattern 1: Google Maps embed với !3d và !4d (ví dụ: ...!3d21.1136798508057!4d105.495305786485)
         match = re.search(r'!3d([0-9\.\-]+)!4d([0-9\.\-]+)', map_link)
         if match:
-            lat, lng = match.group(1), match.group(2)
-            map_coords = f"{lat},{lng}"
+            lat_str, lng_str = match.group(1), match.group(2)
         else:
+            # Pattern 2: Google Maps embed với q=lat,lng (ví dụ: ...?q=21.1136798508057,105.495305786485&key=...)
             match2 = re.search(r'q=([0-9\.\-]+),([0-9\.\-]+)', map_link)
             if match2:
-                lat, lng = match2.group(1), match2.group(2)
+                lat_str, lng_str = match2.group(1), match2.group(2)
+            else:
+                return "", map_link, ""
+
+        # Chuyển đổi sang float và kiểm tra tính hợp lệ
+        try:
+            lat = float(lat_str)
+            lng = float(lng_str)
+            
+            # Kiểm tra phạm vi hợp lệ (lat: -90 đến 90, lng: -180 đến 180)
+            if -90 <= lat <= 90 and -180 <= lng <= 180:
                 map_coords = f"{lat},{lng}"
+                map_dms = utils.format_dms(lat, lng)
+            else:
+                # Tọa độ ngoài phạm vi hợp lệ
+                return "", map_link, ""
+        except (ValueError, TypeError):
+            # Không thể chuyển đổi sang float
+            return "", map_link, ""
 
     except Exception:
+        # Không tìm thấy iframe hoặc lỗi khác
         pass
 
-    return map_coords, map_link
+    return map_coords, map_link, map_dms
 
 
 
@@ -268,11 +328,12 @@ def open_detail_and_extract(
     item["specs"] = specs_map
     item["agent_phone"] = _extract_phone(driver, wait, human_sleep)
 
-    map_coords, map_link = _extract_map(driver, wait)
+    map_coords, map_link, map_dms = _extract_map(driver, wait)
     item["map_coords"] = map_coords
     item["map_link"] = map_link
+    item["map_dms"] = map_dms
 
-    item["pricing_info"] = _extract_pricing(driver, wait)
+    # item["pricing_info"] = _extract_pricing(driver, wait)
 
     human_sleep(2, 4)
     try:

@@ -4,3 +4,5 @@
 /scraper/__pycache__/
 /scraper/collectors/__pycache__/
 /craw/__pycache__/
+/craw/output
+/__pycache__/

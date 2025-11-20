@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batdongsan Scraper - Control Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .form-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .form-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+        
+        .form-group input,
+        .form-group select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        
+        .help-text {
+            font-size: 12px;
+            color: #777;
+            margin-top: 5px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .status-panel {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .status-panel.active {
+            display: block;
+        }
+        
+        .status-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .status-item strong {
+            color: #333;
+        }
+        
+        .status-item.error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        
+        .status-item.success {
+            border-left-color: #28a745;
+            background: #f0fff4;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .quick-date-buttons {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
+        }
+
+        .quick-date-buttons button {
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            background: #f5f5f5;
+            cursor: pointer;
+        }
+
+        .quick-date-buttons button:hover {
+            background: #e0e0e0;
+        }
+
+        .date-range {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏠 Batdongsan Scraper</h1>
+            <p>Control Panel - Cấu hình và điều khiển crawler</p>
+        </div>
+        
+        <div class="content">
+            <form id="crawlerForm">
+                <!-- Cấu hình cơ bản -->
+                <div class="form-section">
+                    <h2>⚙️ Cấu hình cơ bản</h2>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="base_urls">Base URLs (phân cách bằng dấu ;)</label>
+                            <input type="text" id="base_urls" name="base_urls" 
+                                   value="https://batdongsan.com.vn/ban-dat" 
+                                   placeholder="https://batdongsan.com.vn/ban-dat;https://batdongsan.com.vn/ban-nha">
+                            <span class="help-text">Nhập nhiều URL cách nhau bởi dấu ;</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="debugger_address">Chrome Debugger Address</label>
+                            <input type="text" id="debugger_address" name="debugger_address" 
+                                   value="127.0.0.1:9222">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="max_pages">Số trang tối đa</label>
+                            <input type="number" id="max_pages" name="max_pages" value="5" min="1">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="max_items_per_page">Số item tối đa mỗi trang</label>
+                            <input type="number" id="max_items_per_page" name="max_items_per_page" value="20" min="1">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filter địa điểm -->
+                <div class="form-section">
+                    <h2>📍 Filter địa điểm</h2>
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="location">Địa điểm (Thành phố, Quận/Huyện, Phường/Xã, Đường, Dự án)</label>
+                            <input type="text" id="location" name="location" 
+                                   placeholder="VD: Bán nhà Bình Thạnh dưới 5 tỷ">
+                            <span class="help-text">Nếu có, sẽ được nhập vào ô tìm kiếm trên web</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filter giá -->
+                <div class="form-section">
+                    <h2>💰 Filter giá</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="price_from">Giá từ</label>
+                            <input type="text" id="price_from" name="price_from" 
+                                   placeholder="VD: 300-trieu">
+                            <span class="help-text">Format: số-trieu hoặc số-ty</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="price_to">Giá đến</label>
+                            <input type="text" id="price_to" name="price_to" 
+                                   placeholder="VD: 400-trieu">
+                            <span class="help-text">Format: số-trieu hoặc số-ty</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filter diện tích -->
+                <div class="form-section">
+                    <h2>📐 Filter diện tích</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="area_from">Diện tích từ</label>
+                            <input type="text" id="area_from" name="area_from" 
+                                   placeholder="VD: 40m2">
+                            <span class="help-text">Format: sốm2 (ví dụ: 40m2)</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="area_to">Diện tích đến</label>
+                            <input type="text" id="area_to" name="area_to" 
+                                   placeholder="VD: 50m2">
+                            <span class="help-text">Format: sốm2 (ví dụ: 50m2)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Filter khác -->
+                <div class="form-section">
+                    <h2>🔧 Filter khác</h2>
+                    <div class="form-grid">
+                        
+                        <div class="form-group">
+                            <label for="direction">Hướng nhà</label>
+                            <select id="direction" name="direction">
+                                <option value="">-- Chọn hướng --</option>
+                                <option value="bac">Bắc</option>
+                                <option value="nam">Nam</option>
+                                <option value="dong">Đông</option>
+                                <option value="tay">Tây</option>
+                                <option value="dong-bac">Đông Bắc</option>
+                                <option value="dong-nam">Đông Nam</option>
+                                <option value="tay-bac">Tây Bắc</option>
+                                <option value="tay-nam">Tây Nam</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="frontage">Mặt tiền</label>
+                            <select id="frontage" name="frontage">
+                                <option value="">-- Chọn mặt tiền --</option>
+                                <option value="0">Tất cả</option>
+                                <option value="1">Dưới 5m</option>
+                                <option value="2">5-7m</option>
+                                <option value="3">7-10m</option>
+                                <option value="4">10-12m</option>
+                                <option value="5">12-15m</option>
+                                <option value="6">Trên 12m</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="road">Đường vào</label>
+                            <select id="road" name="road">
+                                <option value="">-- Chọn đường vào --</option>
+                                <option value="0">Tất cả</option>
+                                <option value="1">Dưới 5m</option>
+                                <option value="2">5-7m</option>
+                                <option value="3">7-10m</option>
+                                <option value="4">10-12m</option>
+                                <option value="5">12-15m</option>
+                                <option value="6">Trên 12m</option>
+                            </select>
+                        </div>
+
+                        <!-- ⭐ FILTER NGÀY THÁNG NĂM -->
+                        <div class="form-group">
+                            <label>Khoảng ngày đăng</label>
+
+                            <div class="quick-date-buttons">
+                                <button type="button" onclick="setQuickDate('today')">Hôm nay</button>
+                                <button type="button" onclick="setQuickDate('7days')">7 ngày gần đây</button>
+                                <button type="button" onclick="setQuickDate('30days')">30 ngày gần đây</button>
+                            </div>
+
+                            <div class="date-range">
+                                <input 
+                                    type="date"
+                                    id="posted_date_from"
+                                    name="posted_date_from"
+                                    placeholder="Từ ngày"
+                                />
+
+                                <span>→</span>
+
+                                <input 
+                                    type="date"
+                                    id="posted_date_to"
+                                    name="posted_date_to"
+                                    placeholder="Đến ngày"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <!-- Buttons -->
+                <div class="button-group">
+                    <button type="submit" class="btn-primary" id="startBtn">
+                        ▶️ Bắt đầu Crawl
+                    </button>
+                    <button type="button" class="btn-secondary" id="stopBtn" disabled>
+                        ⏹️ Dừng
+                    </button>
+                </div>
+            </form>
+            
+            <!-- Status Panel -->
+            <div class="status-panel" id="statusPanel">
+                <h2>📊 Trạng thái</h2>
+                <div id="statusContent"></div>
+            </div>
+        </div>
+    </div>
+    
+<script>
+    let statusInterval = null;
+    
+    const form = document.getElementById('crawlerForm');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const statusPanel = document.getElementById('statusPanel');
+    const statusContent = document.getElementById('statusContent');
+    
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // ===============================
+        // ⭐ AUTO SET posted_date_to nếu thiếu
+        // ===============================
+        const fromInput = document.getElementById("posted_date_from");
+        const toInput   = document.getElementById("posted_date_to");
+
+        if (fromInput.value && !toInput.value) {
+            const today = new Date().toISOString().split("T")[0];
+            toInput.value = today;
+        }
+        // ===============================
+
+        const formData = new FormData(form);
+        const config = {};
+        for (let [key, value] of formData.entries()) {
+            config[key] = value;
+        }
+        
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        statusPanel.classList.add('active');
+        
+        try {
+            const response = await fetch('/api/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(config)
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                updateStatus('success', 'Crawler đã được khởi động!');
+                startPolling();
+            } else {
+                updateStatus('error', `Lỗi: ${data.error}`);
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        } catch (error) {
+            updateStatus('error', `Lỗi kết nối: ${error.message}`);
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+    });
+    
+    stopBtn.addEventListener('click', async () => {
+        try {
+            await fetch('/api/stop', { method: 'POST' });
+            updateStatus('', 'Đang dừng crawler...');
+            stopPolling();
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        } catch (error) {
+            updateStatus('error', `Lỗi: ${error.message}`);
+        }
+    });
+    
+    function startPolling() {
+        if (statusInterval) clearInterval(statusInterval);
+        statusInterval = setInterval(updateStatusFromServer, 2000);
+    }
+    
+    function stopPolling() {
+        if (statusInterval) {
+            clearInterval(statusInterval);
+            statusInterval = null;
+        }
+    }
+    
+    async function updateStatusFromServer() {
+        try {
+            const response = await fetch('/api/status');
+            const status = await response.json();
+            
+            let html = '';
+            
+            if (status.running) {
+                html += `<div class="status-item"><strong>Trạng thái:</strong> <span class="loading"></span> Đang chạy</div>`;
+            } else {
+                html += `<div class="status-item"><strong>Trạng thái:</strong> Dừng</div>`;
+            }
+            
+            if (status.progress) {
+                html += `<div class="status-item"><strong>Tiến trình:</strong> ${status.progress}</div>`;
+            }
+            
+            if (status.current_url) {
+                html += `<div class="status-item"><strong>URL hiện tại:</strong> ${status.current_url}</div>`;
+            }
+            
+            if (status.current_page) {
+                html += `<div class="status-item"><strong>Trang:</strong> ${status.current_page}</div>`;
+            }
+            
+            if (status.total_items) {
+                html += `<div class="status-item"><strong>Tổng items:</strong> ${status.total_items}</div>`;
+            }
+            
+            if (status.results_file) {
+                html += `<div class="status-item"><strong>File:</strong> ${status.results_file}</div>`;
+            }
+            
+            if (status.error) {
+                html += `<div class="status-item error"><strong>Lỗi:</strong> ${status.error}</div>`;
+            }
+            
+            statusContent.innerHTML = html;
+            
+            if (!status.running) {
+                stopPolling();
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        } catch (error) {
+            console.error('Error fetching status:', error);
+        }
+    }
+    
+    function updateStatus(type, message) {
+        const className = type ? `status-item ${type}` : 'status-item';
+        statusContent.innerHTML = `<div class="${className}">${message}</div>`;
+    }
+
+    // -------------------------
+    // ⭐ Quick date selector
+    // -------------------------
+    function setQuickDate(option) {
+        const to = new Date();
+        const toStr = to.toISOString().split("T")[0];
+
+        let from = new Date();
+
+        if (option === "today") {
+            // from = to (giữ nguyên)
+        }
+        else if (option === "7days") {
+            from.setDate(to.getDate() - 7);
+        }
+        else if (option === "30days") {
+            from.setDate(to.getDate() - 30);
+        }
+
+        const fromStr = from.toISOString().split("T")[0];
+
+        document.getElementById("posted_date_from").value = fromStr;
+        document.getElementById("posted_date_to").value   = toStr;
+    }
+</script>
+
+</body>
+</html>
+

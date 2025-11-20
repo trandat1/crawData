@@ -70,7 +70,8 @@ def collect_list_items(
                     "config": {},
                     "map_coords": "",
                     "map_link": "",
-                    "pricing_info": {},
+                    "map_dms":""
+                    # "pricing_info": {},
                 }
             )
         except StaleElementReferenceException as e:
