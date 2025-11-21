@@ -3,7 +3,7 @@ name = "batdongsan"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Your Name",email = "you@example.com"}
+    {name = "Your Name", email = "you@example.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.10"
@@ -17,7 +17,9 @@ dependencies = [
 ]
 
 [tool.poetry]
-packages = [{include = "batdongsan", from = "src"}]
+packages = [
+    { include = "scraper" }
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
