@@ -405,20 +405,22 @@
     </div>
     
 <script>
-    let statusInterval = null;
-    
+    let polling = false;
+    let lastUpdate = 0;
+
     const form = document.getElementById('crawlerForm');
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
     const statusPanel = document.getElementById('statusPanel');
     const statusContent = document.getElementById('statusContent');
-    
+
+    // ================================
+    // FORM SUBMIT: START CRAWLER
+    // ================================
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        // ===============================
         // ⭐ AUTO SET posted_date_to nếu thiếu
-        // ===============================
         const fromInput = document.getElementById("posted_date_from");
         const toInput   = document.getElementById("posted_date_to");
 
@@ -426,29 +428,26 @@
             const today = new Date().toISOString().split("T")[0];
             toInput.value = today;
         }
-        // ===============================
 
         const formData = new FormData(form);
         const config = {};
         for (let [key, value] of formData.entries()) {
             config[key] = value;
         }
-        
+
         startBtn.disabled = true;
         stopBtn.disabled = false;
         statusPanel.classList.add('active');
-        
+
         try {
             const response = await fetch('/api/start', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(config)
             });
-            
+
             const data = await response.json();
-            
+
             if (response.ok) {
                 updateStatus('success', 'Crawler đã được khởi động!');
                 startPolling();
@@ -463,7 +462,10 @@
             stopBtn.disabled = true;
         }
     });
-    
+
+    // ================================
+    // STOP BUTTON
+    // ================================
     stopBtn.addEventListener('click', async () => {
         try {
             await fetch('/api/stop', { method: 'POST' });
@@ -475,76 +477,73 @@
             updateStatus('error', `Lỗi: ${error.message}`);
         }
     });
-    
+
+    // ================================
+    // LONG POLLING
+    // ================================
     function startPolling() {
-        if (statusInterval) clearInterval(statusInterval);
-        statusInterval = setInterval(updateStatusFromServer, 2000);
+        polling = true;
+        pollServer();
     }
-    
+
     function stopPolling() {
-        if (statusInterval) {
-            clearInterval(statusInterval);
-            statusInterval = null;
-        }
+        polling = false;
     }
-    
-    async function updateStatusFromServer() {
+
+    async function pollServer() {
+        if (!polling) return;
+
         try {
-            const response = await fetch('/api/status');
+            const response = await fetch(`/api/status?last_update=${lastUpdate}`);
             const status = await response.json();
-            
+
+            // ⭐ Cập nhật timestamp lần cuối
+            lastUpdate = status.last_update;
+
             let html = '';
-            
+
             if (status.running) {
                 html += `<div class="status-item"><strong>Trạng thái:</strong> <span class="loading"></span> Đang chạy</div>`;
             } else {
                 html += `<div class="status-item"><strong>Trạng thái:</strong> Dừng</div>`;
             }
-            
-            if (status.progress) {
-                html += `<div class="status-item"><strong>Tiến trình:</strong> ${status.progress}</div>`;
+
+            if (status.progress) html += `<div class="status-item"><strong>Tiến trình:</strong> ${status.progress}</div>`;
+            if (status.current_url) html += `<div class="status-item"><strong>URL hiện tại:</strong> ${status.current_url}</div>`;
+            if (status.current_page) html += `<div class="status-item"><strong>Trang:</strong> ${status.current_page}</div>`;
+            if (status.total_items) html += `<div class="status-item"><strong>Tổng items:</strong> ${status.total_items}</div>`;
+            if (status.results_file_id) {
+                html += `<div class="status-item"><strong>File:</strong> <a href="/download?id=${status.results_file_id}" target="_blank" download>Tải file kết quả</a></div>`;
             }
-            
-            if (status.current_url) {
-                html += `<div class="status-item"><strong>URL hiện tại:</strong> ${status.current_url}</div>`;
-            }
-            
-            if (status.current_page) {
-                html += `<div class="status-item"><strong>Trang:</strong> ${status.current_page}</div>`;
-            }
-            
-            if (status.total_items) {
-                html += `<div class="status-item"><strong>Tổng items:</strong> ${status.total_items}</div>`;
-            }
-            
-            if (status.results_file) {
-                html += `<div class="status-item"><strong>File:</strong> ${status.results_file}</div>`;
-            }
-            
-            if (status.error) {
-                html += `<div class="status-item error"><strong>Lỗi:</strong> ${status.error}</div>`;
-            }
-            
+            if (status.error) html += `<div class="status-item error"><strong>Lỗi:</strong> ${status.error}</div>`;
+
             statusContent.innerHTML = html;
-            
+
             if (!status.running) {
                 stopPolling();
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
             }
+
         } catch (error) {
             console.error('Error fetching status:', error);
         }
+
+        // Gọi tiếp nếu vẫn polling
+        if (polling) pollServer();
     }
-    
+
+    // ================================
+    // UTILITY: UPDATE STATUS
+    // ================================
     function updateStatus(type, message) {
         const className = type ? `status-item ${type}` : 'status-item';
         statusContent.innerHTML = `<div class="${className}">${message}</div>`;
     }
 
-    // -------------------------
-    // ⭐ Quick date selector
-    // -------------------------
+    // ================================
+    // Quick date selector
+    // ================================
     function setQuickDate(option) {
         const to = new Date();
         const toStr = to.toISOString().split("T")[0];
@@ -552,12 +551,10 @@
         let from = new Date();
 
         if (option === "today") {
-            // from = to (giữ nguyên)
-        }
-        else if (option === "7days") {
+            // giữ nguyên from = to
+        } else if (option === "7days") {
             from.setDate(to.getDate() - 7);
-        }
-        else if (option === "30days") {
+        } else if (option === "30days") {
             from.setDate(to.getDate() - 30);
         }
 

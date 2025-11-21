@@ -85,7 +85,6 @@ def apply_search_filters(driver, wait, location_filter):
         
         # Tìm và click nút tìm kiếm
         search_button = driver.find_element(By.ID, "btnSearch")
-        print(search_button)
         search_button.click()
         
         # Chờ trang load
@@ -247,13 +246,13 @@ def scrape_url(
                         human_sleep=human_sleep,
                     )
                     # Lọc theo ngày
-                    if filters and (filters.get("posted_date_from") and filters.get("posted_date_to")):
-                        
-                        posted_date_from = utils.normalize_date(filters["posted_date_from"])
-                        posted_date_to = utils.normalize_date(filters["posted_date_to"])
-                        posted_date = utils.normalize_date(full.get("posted_date", ""))
+                    if filters:
+                        posted_date_from = utils.normalize_date(filters.get("posted_date_from"))
+                        posted_date_to   = utils.normalize_date(filters.get("posted_date_to", str(datetime.today().date())))
+                        posted_date      = utils.normalize_date(full.get("posted_date", ""))
 
-                        if posted_date and (posted_date < posted_date_from or posted_date > posted_date_to):
+                        if posted_date and ((posted_date_from and posted_date < posted_date_from) or
+                                            (posted_date_to   and posted_date > posted_date_to)):
                             continue
 
 
@@ -309,12 +308,10 @@ def run_scraper(
     
     scraped_pids, scraped_hrefs, _ = load_previous_results(config.OUTPUT_DIR, today)
     all_results = load_today_results(results_file, scraped_pids, scraped_hrefs)
-    if filters:
-        scraped_pids, scraped_hrefs, _ = load_previous_results(config.OUTPUT_DIR_FILTER, today)
-        all_results = load_today_results(results_file, scraped_pids, scraped_hrefs)
-        
-    print(scraped_pids)
-    print(scraped_hrefs)
+    # if filters:
+    #     scraped_pids, scraped_hrefs, _ = load_previous_results(config.OUTPUT_DIR_FILTER, today)
+    #     all_results = load_today_results(results_file, scraped_pids, scraped_hrefs)
+
     if all_results:
         print(
             f"Loaded {len(scraped_pids)} pids, {len(scraped_hrefs)} hrefs "

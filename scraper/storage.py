@@ -25,43 +25,38 @@ def load_previous_results(
     output_dir: str,
     today: datetime,
 ) -> Tuple[set[str], set[str], list[dict[str, Any]]]:
-    scraped_pids: set[str] = set()
-    scraped_hrefs: set[str] = set()
-    all_results: list[dict[str, Any]] = []
+    scraped_pids = set()
+    scraped_hrefs = set()
+    all_results = []
 
-    if not os.path.isdir(output_dir):
-        return scraped_pids, scraped_hrefs, all_results
-
-    for month in os.listdir(output_dir):
-        month_path = os.path.join(output_dir, month)
-        if not os.path.isdir(month_path):
-            continue
-
-        for file in os.listdir(month_path):
+    for root, dirs, files in os.walk(output_dir):
+        for file in files:
             if not file.endswith(".json"):
                 continue
 
-            file_date_str = file[:-5]  # remove .json
+            file_path = os.path.join(root, file)
+            file_date_str = file[:-5]
+
             try:
                 file_date = datetime.strptime(file_date_str, "%Y-%m-%d")
             except ValueError:
                 continue
 
-            if file_date > today:  
+            if file_date > today:
                 continue
 
             try:
-                with open(os.path.join(month_path, file), "r", encoding="utf-8") as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
                 if isinstance(data, list):
                     _update_sets_from_items(data, scraped_pids, scraped_hrefs)
                     all_results.extend(data)
-
-            except Exception:
+            except:
                 continue
 
     return scraped_pids, scraped_hrefs, all_results
+
 
 
 
