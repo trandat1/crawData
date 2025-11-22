@@ -64,6 +64,16 @@ def run_crawler_with_config(config_data, status_callback=None):
     road = config_data.get("road", "")
     if road is not None and road != "":
         filters["road"] = road
+    
+    # Filter phòng ngủ (có thể nhiều giá trị, ví dụ: "1,2")
+    rooms = config_data.get("rooms", "").strip()
+    if rooms:
+        filters["rooms"] = rooms
+    
+    # Filter hướng ban công
+    bcdir = config_data.get("bcdir", "").strip()
+    if bcdir:
+        filters["bcdir"] = bcdir
         
     posted_date_from = config_data.get("posted_date_from", "").strip()
     if posted_date_from:

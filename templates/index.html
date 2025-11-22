@@ -227,11 +227,71 @@
                     <h2>⚙️ Cấu hình cơ bản</h2>
                     <div class="form-grid">
                         <div class="form-group full-width">
-                            <label for="base_urls">Base URLs (phân cách bằng dấu ;)</label>
-                            <input type="text" id="base_urls" name="base_urls" 
-                                   value="https://batdongsan.com.vn/ban-dat" 
-                                   placeholder="https://batdongsan.com.vn/ban-dat;https://batdongsan.com.vn/ban-nha">
-                            <span class="help-text">Nhập nhiều URL cách nhau bởi dấu ;</span>
+                            <label>Loại bất động sản</label>
+                            <div class="checkbox-group" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-top: 5px; max-height: 400px; overflow-y: auto; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <input type="checkbox" name="property_types" value="/ban-can-ho-chung-cu" class="property-type-checkbox" data-label="Bán căn hộ chung cư">
+                                    <span style="flex: 1; min-width: 150px;">Bán căn hộ chung cư</span>
+                                    <input type="number" class="property-page-input" data-path="/ban-can-ho-chung-cu" placeholder="Page" min="1" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 3px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <input type="checkbox" name="property_types" value="/ban-can-ho-chung-cu-mini" class="property-type-checkbox" data-label="Bán chung cư mini, căn hộ dịch vụ">
+                                    <span style="flex: 1; min-width: 150px;">Bán chung cư mini, căn hộ dịch vụ</span>
+                                    <input type="number" class="property-page-input" data-path="/ban-can-ho-chung-cu-mini" placeholder="Page" min="1" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 3px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <input type="checkbox" name="property_types" value="/ban-nha-rieng" class="property-type-checkbox" data-label="Bán nhà riêng">
+                                    <span style="flex: 1; min-width: 150px;">Bán nhà riêng</span>
+                                    <input type="number" class="property-page-input" data-path="/ban-nha-rieng" placeholder="Page" min="1" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 3px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <input type="checkbox" name="property_types" value="/ban-nha-biet-thu-lien-ke" class="property-type-checkbox" data-label="Bán nhà biệt thự, liền kề">
+                                    <span style="flex: 1; min-width: 150px;">Bán nhà biệt thự, liền kề</span>
+                                    <input type="number" class="property-page-input" data-path="/ban-nha-biet-thu-lien-ke" placeholder="Page" min="1" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 3px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <input type="checkbox" name="property_types" value="/ban-nha-mat-pho" class="property-type-checkbox" data-label="Bán nhà mặt phố">
+                                    <span style="flex: 1; min-width: 150px;">Bán nhà mặt phố</span>
+                                    <input type="number" class="property-page-input" data-path="/ban-nha-mat-pho" placeholder="Page" min="1" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 3px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <input type="checkbox" name="property_types" value="/ban-shophouse-nha-pho-thuong-mai" class="property-type-checkbox" data-label="Bán shophouse, nhà phố thương mại">
+                                    <span style="flex: 1; min-width: 150px;">Bán shophouse, nhà phố thương mại</span>
+                                    <input type="number" class="property-page-input" data-path="/ban-shophouse-nha-pho-thuong-mai" placeholder="Page" min="1" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 3px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <input type="checkbox" name="property_types" value="/ban-dat-nen-du-an" class="property-type-checkbox" data-label="Bán đất nền dự án">
+                                    <span style="flex: 1; min-width: 150px;">Bán đất nền dự án</span>
+                                    <input type="number" class="property-page-input" data-path="/ban-dat-nen-du-an" placeholder="Page" min="1" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 3px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <input type="checkbox" name="property_types" value="/ban-dat" class="property-type-checkbox" checked data-label="Bán đất">
+                                    <span style="flex: 1; min-width: 150px;">Bán đất</span>
+                                    <input type="number" class="property-page-input" data-path="/ban-dat" placeholder="Page" min="1" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 3px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <input type="checkbox" name="property_types" value="/ban-trang-trai-khu-nghi-duong" class="property-type-checkbox" data-label="Bán trang trại, khu nghỉ dưỡng">
+                                    <span style="flex: 1; min-width: 150px;">Bán trang trại, khu nghỉ dưỡng</span>
+                                    <input type="number" class="property-page-input" data-path="/ban-trang-trai-khu-nghi-duong" placeholder="Page" min="1" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 3px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <input type="checkbox" name="property_types" value="/ban-condotel" class="property-type-checkbox" data-label="Bán condotel">
+                                    <span style="flex: 1; min-width: 150px;">Bán condotel</span>
+                                    <input type="number" class="property-page-input" data-path="/ban-condotel" placeholder="Page" min="1" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 3px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <input type="checkbox" name="property_types" value="/ban-kho-nha-xuong" class="property-type-checkbox" data-label="Bán kho, nhà xưởng">
+                                    <span style="flex: 1; min-width: 150px;">Bán kho, nhà xưởng</span>
+                                    <input type="number" class="property-page-input" data-path="/ban-kho-nha-xuong" placeholder="Page" min="1" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 3px;">
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <input type="checkbox" name="property_types" value="/ban-loai-bat-dong-san-khac" class="property-type-checkbox" data-label="Bán loại bất động sản khác">
+                                    <span style="flex: 1; min-width: 150px;">Bán loại bất động sản khác</span>
+                                    <input type="number" class="property-page-input" data-path="/ban-loai-bat-dong-san-khac" placeholder="Page" min="1" style="width: 70px; padding: 5px; border: 1px solid #ddd; border-radius: 3px;">
+                                </div>
+                            </div>
+                            <span class="help-text">Có thể chọn nhiều loại bất động sản. Mỗi loại có thể chọn page bắt đầu riêng (để trống hoặc 1 = bắt đầu từ trang 1). URLs sẽ được tự động tạo từ các lựa chọn.</span>
+                            <input type="hidden" id="base_urls" name="base_urls" value="">
                         </div>
                         
                         <div class="form-group">
@@ -352,6 +412,49 @@
                                 <option value="6">Trên 12m</option>
                             </select>
                         </div>
+                        
+                        <div class="form-group">
+                            <label>Phòng ngủ</label>
+                            <div class="checkbox-group" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+                                <label style="display: flex; align-items: center; gap: 5px;">
+                                    <input type="checkbox" name="rooms" value="1" class="room-checkbox">
+                                    <span>1 phòng</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px;">
+                                    <input type="checkbox" name="rooms" value="2" class="room-checkbox">
+                                    <span>2 phòng</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px;">
+                                    <input type="checkbox" name="rooms" value="3" class="room-checkbox">
+                                    <span>3 phòng</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px;">
+                                    <input type="checkbox" name="rooms" value="4" class="room-checkbox">
+                                    <span>4 phòng</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 5px;">
+                                    <input type="checkbox" name="rooms" value="5" class="room-checkbox">
+                                    <span>5 phòng</span>
+                                </label>
+                            </div>
+                            <span class="help-text">Có thể chọn nhiều phòng (ví dụ: 1,2 phòng). <strong>Lưu ý:</strong> Chỉ áp dụng cho bán chung cư, nhà, biệt thự, nhà phố, trang trại... không áp dụng cho bán đất.</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="bcdir">Hướng ban công</label>
+                            <select id="bcdir" name="bcdir">
+                                <option value="">-- Chọn hướng ban công --</option>
+                                <option value="1">Đông</option>
+                                <option value="2">Tây</option>
+                                <option value="3">Nam</option>
+                                <option value="4">Bắc</option>
+                                <option value="5">Đông Bắc</option>
+                                <option value="6">Tây Bắc</option>
+                                <option value="7">Tây Nam</option>
+                                <option value="8">Đông Nam</option>
+                            </select>
+                            <span class="help-text"><strong>Lưu ý:</strong> Chỉ áp dụng cho chung cư mini, chung cư... không áp dụng cho bán đất.</span>
+                        </div>
 
                         <!-- ⭐ FILTER NGÀY THÁNG NĂM -->
                         <div class="form-group">
@@ -429,10 +532,39 @@
             toInput.value = today;
         }
 
+        // Xử lý checkbox loại bất động sản - tạo URLs từ các path đã chọn kèm page number
+        const propertyTypeCheckboxes = document.querySelectorAll('.property-type-checkbox:checked');
+        if (propertyTypeCheckboxes.length > 0) {
+            const baseDomain = 'https://batdongsan.com.vn';
+            const urls = Array.from(propertyTypeCheckboxes).map(cb => {
+                const path = cb.value;
+                // Tìm input page tương ứng
+                const pageInput = document.querySelector(`.property-page-input[data-path="${path}"]`);
+                let url = baseDomain + path;
+                
+                // Nếu có page và page > 1, thêm /p{page} vào URL
+                if (pageInput && pageInput.value && parseInt(pageInput.value) > 1) {
+                    url += '/p' + parseInt(pageInput.value);
+                }
+                
+                return url;
+            });
+            document.getElementById('base_urls').value = urls.join(';');
+        } else {
+            // Nếu không chọn gì, dùng URL mặc định
+            document.getElementById('base_urls').value = 'https://batdongsan.com.vn/ban-dat';
+        }
+
         const formData = new FormData(form);
         const config = {};
         for (let [key, value] of formData.entries()) {
             config[key] = value;
+        }
+        
+        // Xử lý checkbox phòng ngủ - gộp thành chuỗi cách nhau bởi dấu phẩy
+        const roomCheckboxes = document.querySelectorAll('.room-checkbox:checked');
+        if (roomCheckboxes.length > 0) {
+            config.rooms = Array.from(roomCheckboxes).map(cb => cb.value).join(',');
         }
 
         startBtn.disabled = true;

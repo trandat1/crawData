@@ -1,5 +1,7 @@
 """Module chung chứa logic scraping, có thể dùng cho cả CLI và Web interface."""
 import time
+import re
+import unicodedata
 from datetime import datetime
 from urllib.parse import urlencode, urlparse, parse_qs, urlunparse
 from typing import Optional, Dict, Any, Callable
@@ -66,17 +68,210 @@ def find_and_click_next_page(driver):
     return False
 
 
-def apply_search_filters(driver, wait, location_filter):
-    """Áp dụng filter địa điểm vào ô tìm kiếm."""
+def find_exact_url_from_sidebar(driver, wait, location_filter, base_url):
+    """
+    Tìm URL chính xác từ sidebar khi URL chuyển về dạng generic.
+    
+    Quy trình:
+    1. Phát hiện URL generic (ví dụ: /nha-dat-ban-ha-noi)
+    2. Quay lại URL gốc (base_url) để tìm trong sidebar
+    3. Tìm link khớp với location filter trong sidebar
+    4. Hỗ trợ tìm theo nhiều cấp độ (tỉnh → quận → phường) nếu cần
+    
+    Args:
+        driver: Selenium driver
+        wait: WebDriverWait
+        location_filter: Chuỗi location filter (có thể có nhiều cấp: "Hà Nội", "Hà Nội Đống Đa", "Hà Nội Đống Đa Khâm Thiên")
+        base_url: URL gốc trước khi search (ví dụ: https://batdongsan.com.vn/ban-can-ho-chung-cu-mini)
+    
+    Returns:
+        URL chính xác hoặc None nếu không tìm thấy
+    """
+    try:
+        current_url = driver.current_url
+        
+        # Kiểm tra xem URL có phải là generic không (ví dụ: /nha-dat-ban-ha-noi)
+        if "/nha-dat-ban" in current_url or "/nha-dat-cho-thue" in current_url:
+            print(f"[Filter] Phát hiện URL generic: {current_url}")
+            print(f"[Filter] Quay lại URL gốc: {base_url} để tìm URL chính xác...")
+            
+            # Quay lại URL gốc
+            driver.get(base_url)
+            human_sleep(3, 5)
+            
+            # Lấy loại bất động sản từ base_url (ví dụ: /ban-can-ho-chung-cu-mini)
+            from urllib.parse import urlparse
+            parsed = urlparse(base_url)
+            property_type_path = parsed.path  # ví dụ: /ban-can-ho-chung-cu-mini
+            
+            # Parse location_filter thành các phần (tỉnh/thành phố, quận/huyện, phường/xã)
+            location_parts = [part.strip() for part in location_filter.split() if part.strip()]
+            
+            # Tìm sidebar box
+            try:
+                sidebar_boxes = driver.find_elements(By.CSS_SELECTOR, ".re__product-count-box")
+                
+                if not sidebar_boxes:
+                    print("[Filter] Không tìm thấy sidebar box")
+                    return None
+                
+                # Tìm box phù hợp với loại bất động sản
+                # Tạo keyword từ property_type_path (ví dụ: "chung cư mini" từ "/ban-can-ho-chung-cu-mini")
+                property_keywords = property_type_path.replace("/ban-", "").replace("/cho-thue-", "").replace("-", " ").split()
+                
+                target_box = None
+                for box in sidebar_boxes:
+                    try:
+                        title = box.find_element(By.CSS_SELECTOR, ".re__sidebar-box-title")
+                        title_text = title.text.lower()
+                        
+                        # Kiểm tra xem title có chứa keyword của loại bất động sản không
+                        # Ví dụ: "Bán chung cư mini, căn hộ dịch vụ" chứa "chung cư mini"
+                        matches = sum(1 for kw in property_keywords if kw in title_text)
+                        if matches >= 2 or "bán" in title_text or "cho thuê" in title_text:
+                            target_box = box
+                            print(f"[Filter] Tìm thấy sidebar box phù hợp: {title.text}")
+                            break
+                    except:
+                        continue
+                
+                if not target_box:
+                    print("[Filter] Không tìm thấy sidebar box phù hợp, thử dùng box đầu tiên")
+                    if sidebar_boxes:
+                        target_box = sidebar_boxes[0]
+                    else:
+                        return None
+                
+                # Thử click "Xem thêm" để mở rộng danh sách nếu có
+                try:
+                    view_more_links = target_box.find_elements(By.CSS_SELECTOR, ".re__view-more")
+                    for view_more in view_more_links:
+                        if view_more.is_displayed():
+                            view_more.click()
+                            human_sleep(1, 2)
+                            break
+                except:
+                    pass
+                
+                # Tìm link trong sidebar theo location
+                location_links = target_box.find_elements(By.CSS_SELECTOR, "a.re__link-se")
+                
+                if not location_links:
+                    print("[Filter] Không tìm thấy link location trong sidebar")
+                    return None
+                
+                # Normalize location filter (loại bỏ dấu, chuyển về lowercase)
+                def normalize_text(text):
+                    # Loại bỏ dấu tiếng Việt
+                    text = unicodedata.normalize('NFD', text)
+                    text = text.encode('ascii', 'ignore').decode('utf-8')
+                    return text.lower().strip()
+                
+                location_normalized = normalize_text(location_filter)
+                
+                # Tìm link khớp với location filter
+                matched_link = None
+                best_match_score = 0
+                
+                for link in location_links:
+                    link_text = link.text
+                    link_href = link.get_attribute("href")
+                    
+                    # Loại bỏ số trong ngoặc (ví dụ: "Hà Nội (206)" -> "Hà Nội")
+                    link_text_clean = re.sub(r'\s*\(\d+\)\s*', '', link_text).strip()
+                    link_text_normalized = normalize_text(link_text_clean)
+                    
+                    # Tính điểm khớp (ưu tiên khớp chính xác, sau đó khớp chứa)
+                    score = 0
+                    if location_normalized == link_text_normalized:
+                        score = 100  # Khớp chính xác
+                    elif location_normalized in link_text_normalized:
+                        score = 80  # Location filter nằm trong link text
+                    elif link_text_normalized in location_normalized:
+                        score = 60  # Link text nằm trong location filter
+                    else:
+                        # Kiểm tra từng từ
+                        location_words = set(location_normalized.split())
+                        link_words = set(link_text_normalized.split())
+                        common_words = location_words.intersection(link_words)
+                        if common_words:
+                            score = len(common_words) * 10
+                    
+                    if score > best_match_score:
+                        best_match_score = score
+                        matched_link = link
+                        print(f"[Filter] Tìm thấy link khớp (score: {score}): {link_text_clean} -> {link_href}")
+                
+                # Nếu không tìm thấy khớp tốt, thử tìm theo từng phần của location
+                if not matched_link or best_match_score < 50:
+                    # Tách location thành các phần (ví dụ: "Hà Nội Đống Đa" -> ["Hà Nội", "Đống Đa"])
+                    location_parts = [part.strip() for part in location_filter.split() if part.strip()]
+                    
+                    # Ưu tiên tìm theo phần đầu tiên (thường là tỉnh/thành phố)
+                    if location_parts:
+                        first_part = location_parts[0]
+                        first_part_normalized = normalize_text(first_part)
+                        
+                        for link in location_links:
+                            link_text = link.text
+                            link_text_clean = re.sub(r'\s*\(\d+\)\s*', '', link_text).strip()
+                            link_text_normalized = normalize_text(link_text_clean)
+                            
+                            if first_part_normalized == link_text_normalized or first_part_normalized in link_text_normalized:
+                                matched_link = link
+                                best_match_score = 90
+                                print(f"[Filter] Tìm thấy link khớp theo phần đầu '{first_part}': {link_text_clean} -> {link.get_attribute('href')}")
+                                break
+                
+                if matched_link and best_match_score >= 50:
+                    href = matched_link.get_attribute("href")
+                    if href:
+                        # Tạo full URL
+                        if href.startswith("http"):
+                            exact_url = href
+                        elif href.startswith("/"):
+                            exact_url = f"https://batdongsan.com.vn{href}"
+                        else:
+                            exact_url = f"https://batdongsan.com.vn/{href}"
+                        
+                        print(f"[Filter] Tìm thấy URL chính xác: {exact_url}")
+                        return exact_url
+                
+                print(f"[Filter] Không tìm thấy link khớp với location: {location_filter}")
+                return None
+                
+            except Exception as e:
+                print(f"[Filter] Lỗi khi tìm URL từ sidebar: {e}")
+                return None
+        
+        return None
+        
+    except Exception as e:
+        print(f"[Filter] Lỗi trong find_exact_url_from_sidebar: {e}")
+        return None
+
+
+def apply_search_filters(driver, wait, location_filter, base_url=None):
+    """
+    Áp dụng filter địa điểm vào ô tìm kiếm và tìm URL chính xác nếu cần.
+    
+    Args:
+        driver: Selenium driver
+        wait: WebDriverWait
+        location_filter: Chuỗi location filter
+        base_url: URL gốc trước khi search (để tìm URL chính xác)
+    
+    Returns:
+        Tuple (success: bool, final_url: str) - final_url là URL sau khi search (có thể đã được điều chỉnh)
+    """
     if not location_filter or not location_filter.strip():
-        return False
+        return False, None
     
     try:
         # Tìm ô tìm kiếm
         search_input = wait.until(
             EC.presence_of_element_located((By.ID, "SuggestionSearch"))
         )
-
 
         # Xóa nội dung cũ và nhập filter
         search_input.clear()
@@ -90,11 +285,33 @@ def apply_search_filters(driver, wait, location_filter):
         # Chờ trang load
         human_sleep(3, 5)
         
-        print(f"[Filter] Đã áp dụng filter địa điểm: {location_filter}")
-        return True
+        final_url = driver.current_url
+        print(f"[Filter] URL sau khi search: {final_url}")
+        
+        # Kiểm tra xem URL có phải là generic không
+        # Nếu là generic (ví dụ: /nha-dat-ban-ha-noi), cần tìm URL chính xác từ sidebar
+        # Lưu ý: Trang bán đất (/ban-dat) không cần áp dụng logic này vì đã hoạt động đúng
+        if base_url and ("/nha-dat-ban" in final_url or "/nha-dat-cho-thue" in final_url):
+            # Bỏ qua logic này cho trang bán đất
+            if "/ban-dat" in base_url:
+                print(f"[Filter] Trang bán đất, bỏ qua logic tìm URL chính xác từ sidebar")
+            else:
+                print(f"[Filter] URL là generic, đang tìm URL chính xác từ sidebar...")
+                exact_url = find_exact_url_from_sidebar(driver, wait, location_filter, base_url)
+                if exact_url:
+                    final_url = exact_url
+                    print(f"[Filter] Sử dụng URL chính xác từ sidebar: {final_url}")
+                else:
+                    print(f"[Filter] Không tìm thấy URL chính xác, giữ nguyên URL: {final_url}")
+        else:
+            print(f"[Filter] URL đã đúng, không cần điều chỉnh: {final_url}")
+        
+        print(f"[Filter] Đã áp dụng filter địa điểm: {location_filter}, final URL: {final_url}")
+        return True, final_url
+        
     except Exception as e:
         print(f"[Filter] Lỗi khi áp dụng filter địa điểm: {e}")
-        return False
+        return False, None
 
 
 def build_url_with_filters(base_url, filters):
@@ -135,6 +352,19 @@ def build_url_with_filters(base_url, filters):
     if filters.get("road") is not None and filters.get("road") != "":
         query_params["road"] = [str(filters["road"])]
     
+    # rs: số phòng ngủ (có thể nhiều giá trị, ví dụ: rs=1,2)
+    if filters.get("rooms"):
+        rooms_value = filters["rooms"]
+        # Nếu là string có dấu phẩy, giữ nguyên; nếu không, chuyển thành string
+        if isinstance(rooms_value, str):
+            query_params["rs"] = [rooms_value]
+        else:
+            query_params["rs"] = [str(rooms_value)]
+    
+    # bcdir: hướng ban công (1=Đông, 2=Tây, 3=Nam, 4=Bắc, 5=Đông Bắc, 6=Tây Bắc, 7=Tây Nam, 8=Đông Nam)
+    if filters.get("bcdir") is not None and filters.get("bcdir") != "":
+        query_params["bcdir"] = [str(filters["bcdir"])]
+    
     # Xây dựng lại URL
     new_query = urlencode(query_params, doseq=True)
     new_parsed = parsed._replace(query=new_query)
@@ -168,13 +398,18 @@ def scrape_url(
         # 2) NẾU CÓ LOCATION → TÌM LOCATION TRƯỚC
         # ===============================================================
         if filters and filters.get("location"):
-            applied = apply_search_filters(driver, wait, filters["location"])
+            applied, location_url = apply_search_filters(driver, wait, filters["location"], base_url)
             human_sleep(2, 4)
 
-            if applied:
-                # cập nhật base_url bằng URL sau khi tìm kiếm location
-                base_url = driver.current_url
+            if applied and location_url:
+                # cập nhật base_url bằng URL sau khi tìm kiếm location (có thể đã được điều chỉnh từ sidebar)
+                base_url = location_url
                 print("[URL] Base URL mới sau location:", base_url)
+                
+                # Nếu URL đã được điều chỉnh, load lại trang với URL chính xác
+                if location_url != driver.current_url:
+                    driver.get(location_url)
+                    human_sleep(3, 5)
 
         # ===============================================================
         # 3) XÂY DỰNG URL CUỐI CÙNG VỚI QUERY FILTER KHÁC
