@@ -65,16 +65,23 @@ def _extract_short_info(driver):
                     m = area_pattern.search(value)
                     area = m.group(0) if m else value
 
-                # ---- PRICE_PER_M2 ----
-                # Chỉ set nếu không phải là diện tích và có pattern giá/m²
-                if not price_per_m2 and not low_label.startswith("diện tích"):
-                    # Kiểm tra label có chứa "giá" hoặc value có pattern giá/m²
-                    if ("giá" in low_label and ("/m" in low_value or "m²" in low_value)) or per_m_pattern.search(low_value):
-                        price_per_m2 = value
-
-                # ---- PRICE (tổng) → EXT ----
-                if not price and ext:
-                    price = ext
+                # ---- PRICE và PRICE_PER_M2 ----
+                # Kiểm tra nếu label có chứa "giá" hoặc "khoảng giá"
+                if "giá" in low_label or "khoảng giá" in low_label:
+                    # value = giá tổng (ví dụ: "6,3 tỷ")
+                    # ext = giá/m² (ví dụ: "~5,99 triệu/m²")
+                    
+                    # PRICE (tổng) = value
+                    if not price and value:
+                        price = value
+                    
+                    # PRICE_PER_M2 = ext (nếu ext có pattern giá/m²)
+                    if not price_per_m2 and ext:
+                        if per_m_pattern.search(ext.lower()) or "/m" in ext.lower() or "m²" in ext.lower():
+                            price_per_m2 = ext
+                        # Nếu ext không phải giá/m², có thể là giá tổng bổ sung
+                        elif not price:
+                            price = ext
 
             except:
                 continue
@@ -133,12 +140,24 @@ def _extract_config(driver):
 
 
 def _extract_phone(driver, wait, human_sleep: Callable[[float, float], None]):
-    return ""
+    """
+    Extract phone number và contact name từ phone button.
+    Returns: (phone_text, contact_name)
+    """
     phone_text = ""
+    contact_name = ""
     try:
         btn = driver.find_element(
             By.CSS_SELECTOR, 'div[kyc-tracking-id="lead-phone-ldp"], div[kyc-tracking-id="lead-phone-ldp"] .re__btn'
         )
+        
+        # Lấy contact name từ data-kyc-name
+        try:
+            contact_name = btn.get_attribute("data-kyc-name") or ""
+            contact_name = contact_name.strip()
+        except:
+            pass
+        
         driver.execute_script("arguments[0].scrollIntoView({behavior:'smooth',block:'center'});", btn)
         human_sleep(0.5, 1.0)
         try:
@@ -154,7 +173,8 @@ def _extract_phone(driver, wait, human_sleep: Callable[[float, float], None]):
             phone_text = m.group(0) if m else ""
     except Exception:
         phone_text = ""
-    return phone_text
+        contact_name = ""
+    return phone_text, contact_name
 
 
 def _extract_map(driver, wait):
@@ -326,7 +346,9 @@ def open_detail_and_extract(
     item["posted_date"] = config.get("Ngày đăng", "")
 
     item["specs"] = specs_map
-    item["agent_phone"] = _extract_phone(driver, wait, human_sleep)
+    phone_text, contact_name = _extract_phone(driver, wait, human_sleep)
+    item["agent_phone"] = phone_text
+    item["agent_name"] = contact_name
 
     map_coords, map_link, map_dms = _extract_map(driver, wait)
     item["map_coords"] = map_coords
