@@ -26,65 +26,62 @@ def _scroll_detail(driver, steps: int, human_sleep: Callable[[float, float], Non
 
 
 def _extract_short_info(driver):
-    price = ""           # giá tổng (ext)
-    area = ""            # diện tích
-    price_per_m2 = ""    # giá/m2
+    price = ""
+    price_per_m2 = ""
+    area = ""
 
-    per_m_pattern = re.compile(r'(triệu|tỷ|đ|dong|vnđ).*(/m2|/m²|/m)', re.IGNORECASE)
-    area_pattern = re.compile(r'\b[0-9]+(?:[.,][0-9]+)?\s*(m²|m2|m)\b', re.IGNORECASE)
+    # Regex nhận dạng
+    re_area = re.compile(r'\b[0-9]+(?:[.,][0-9]+)?\s*(m²|m2|m)\b', re.IGNORECASE)
+    re_price_per_m2 = re.compile(r'(tỷ|triệu|đ|vnđ|dong)[^/]*(/m2|/m²|/m)', re.IGNORECASE)
+    re_price = re.compile(r'\b[0-9]+(?:[.,][0-9]+)?\s*(tỷ|triệu|đ|vnđ)\b', re.IGNORECASE)
 
     try:
         items = driver.find_elements(By.CSS_SELECTOR, ".re__pr-short-info .re__pr-short-info-item")
+
         for it in items:
+            full_text = (it.get_attribute("innerText") or "").strip().lower()
+
+            # ----- lấy value + ext nếu có -----
             try:
-                label = ""
-                try:
-                    label = it.find_element(By.CSS_SELECTOR, "span.title").text.strip().lower()
-                except:
-                    label = (it.get_attribute("innerText") or "").splitlines()[0].strip().lower()
-
-                # value
-                try:
-                    value = it.find_element(By.CSS_SELECTOR, "span.value").text.strip()
-                except:
-                    parts = (it.get_attribute("innerText") or "").splitlines()
-                    value = parts[1].strip() if len(parts) > 1 else ""
-
-                # ext = giá tổng
-                try:
-                    ext = it.find_element(By.CSS_SELECTOR, "span.ext").text.strip()
-                except:
-                    ext = ""
-
-                low_value = value.lower()
-                low_label = label.lower()
-
-                # ---- AREA ----
-                # Ưu tiên kiểm tra label "diện tích" trước
-                if not area and (low_label.startswith("diện tích") or (not low_label.startswith("giá") and area_pattern.search(low_value))):
-                    m = area_pattern.search(value)
-                    area = m.group(0) if m else value
-
-                # ---- PRICE và PRICE_PER_M2 ----
-                # Kiểm tra nếu label có chứa "giá" hoặc "khoảng giá"
-                if "giá" in low_label or "khoảng giá" in low_label:
-                    # value = giá tổng (ví dụ: "6,3 tỷ")
-                    # ext = giá/m² (ví dụ: "~5,99 triệu/m²")
-                    
-                    # PRICE (tổng) = value
-                    if not price and value:
-                        price = value
-                    
-                    # PRICE_PER_M2 = ext (nếu ext có pattern giá/m²)
-                    if not price_per_m2 and ext:
-                        if per_m_pattern.search(ext.lower()) or "/m" in ext.lower() or "m²" in ext.lower():
-                            price_per_m2 = ext
-                        # Nếu ext không phải giá/m², có thể là giá tổng bổ sung
-                        elif not price:
-                            price = ext
-
+                value = it.find_element(By.CSS_SELECTOR, "span.value").text.strip().lower()
             except:
-                continue
+                value = ""
+
+            try:
+                ext = it.find_element(By.CSS_SELECTOR, "span.ext").text.strip().lower()
+            except:
+                ext = ""
+
+            candidates = [value, ext, full_text]
+
+            # =======================
+            #    DIỆN TÍCH (area)
+            # =======================
+            if not area:
+                for text in candidates:
+                    m = re_area.search(text)
+                    if m:
+                        area = m.group(0)
+                        break
+
+            # =======================
+            #    GIÁ/M² (price_per_m2)
+            # =======================
+            if not price_per_m2:
+                for text in candidates:
+                    if re_price_per_m2.search(text) or "/m" in text:
+                        price_per_m2 = text.strip()
+                        break
+
+            # =======================
+            #    GIÁ TỔNG (price)
+            # =======================
+            if not price:
+                for text in candidates:
+                    # phải chứa đơn vị tiền nhưng KHÔNG được chứa /m
+                    if re_price.search(text) and "/m" not in text:
+                        price = text.strip()
+                        break
 
     except:
         pass

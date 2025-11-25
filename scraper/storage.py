@@ -417,7 +417,7 @@ def transform_to_example_format(item: dict[str, Any]) -> dict[str, Any]:
         "lane_width": None,  # Có thể có trong specs (đường vào)
         "title": item.get("title", ""),
         "content": item.get("description", ""),
-        "contact_type": "broker" if item.get("agent_name") else "owner",
+        "contact_type": 2,
         "contact_name": item.get("agent_name", ""),
         "contact_phone_number": item.get("agent_phone", ""),
         "paper_no": None,  # Có thể có trong specs/config
@@ -461,7 +461,6 @@ def transform_to_example_format(item: dict[str, Any]) -> dict[str, Any]:
     # Loại bỏ other_info nếu trống
     if "other_info" in cleaned_output and not cleaned_output["other_info"]:
         cleaned_output.pop("other_info")
-    
     return cleaned_output
 
 
