@@ -121,65 +121,65 @@ Chỉnh sửa các hằng số trong `scraper/config.py` nếu muốn thay đổ
 Mỗi item trong JSON output chứa:
 ## Thông tin cơ bản
 
-`real_estate_code`: Mã tin đăng (PID)
+- `real_estate_code`: Mã tin đăng (PID)
 
-`title`: Tiêu đề tin đăng
+- `title`: Tiêu đề tin đăng
 
-`content`: Nội dung mô tả chi tiết
+- `content`: Nội dung mô tả chi tiết
 
-`status`: Trạng thái tin đăng (1 = hoạt động)
+- `status`: Trạng thái tin đăng (1 = hoạt động)
 
 ## Thông tin danh mục & loại hình
 
-`real_estate_type_id`: ID loại bất động sản
+- `real_estate_type_id`: ID loại bất động sản
 
-`sale_type`: Loại giao dịch (sell / rent)
+- `sale_type`: Loại giao dịch (sell / rent)
 
-`demand_id`: ID nhu cầu
+- `demand_id`: ID nhu cầu
 
 ## Thông tin vị trí
 
-`province_id`: ID tỉnh/thành phố
+- `province_id`: ID tỉnh/thành phố
 
-`district_id`: ID quận/huyện
+- `district_id`: ID quận/huyện
 
-`ward_id`: ID phường/xã (có thể null)
+- `ward_id`: ID phường/xã (có thể null)
 
-`address_detail`: Địa chỉ dạng văn bản
+- `address_detail`: Địa chỉ dạng văn bản
 
-`lat_long`: Tọa độ dạng "lat,lng"
+- `lat_long`: Tọa độ dạng "lat,lng"
 
 ## Thông tin giá và diện tích
 
-`price`: Giá tổng (đơn vị VND, kiểu số nguyên)
+- `price`: Giá tổng (đơn vị VND, kiểu số nguyên)
 
-`price_unit`: Đơn vị giá (1 = tổng, 2 = theo m²)
+- `price_unit`: Đơn vị giá (1 = tổng, 2 = theo m²)
 
-`area`: Diện tích số (float)
+- `area`: Diện tích số (float)
 
-`area_unit`: "m2"
+- `area_unit`: "m2"
 
 ## Hình ảnh
 
-`images`: Danh sách URL ảnh (array)
+- `images`: Danh sách URL ảnh (array)
 
 ## Thông tin liên hệ
 
-`contact_type`: Loại người bán (1 = môi giới, 2 = chính chủ)
+- `contact_type`: Loại người bán (1 = môi giới, 2 = chính chủ)
 
-`contact_name`: Tên người liên hệ
+- `contact_name`: Tên người liên hệ
 
-`contact_phone_number`: Số điện thoại
+- `contact_phone_number`: Số điện thoại
 
 ## Thông tin pháp lý
 
-`infomation_legal_docs_id`: ID loại giấy tờ pháp lý
+- `infomation_legal_docs_id`: ID loại giấy tờ pháp lý
 
 ## Thông tin khác
 
-`other_info.pid`: Mã tin (trùng real_estate_code)
+- `other_info.pid`: Mã tin (trùng real_estate_code)
 
-`other_info.href`: URL chi tiết bài đăng
+- `other_info.href`: URL chi tiết bài đăng
 
 ## Tính năng
 
