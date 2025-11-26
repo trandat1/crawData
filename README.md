@@ -119,36 +119,67 @@ Chỉnh sửa các hằng số trong `scraper/config.py` nếu muốn thay đổ
 ## Dữ liệu thu thập
 
 Mỗi item trong JSON output chứa:
+## Thông tin cơ bản
 
-### Thông tin cơ bản
-- `pid`: Product ID (string)
-- `href`: URL chi tiết của tin đăng
-- `title`: Tiêu đề tin đăng
-- `location`: Địa chỉ bất động sản
-- `description`: Mô tả chi tiết
+`real_estate_code`: Mã tin đăng (PID)
 
-### Thông tin giá và diện tích
-- `price`: Giá tổng (từ trường "ext", ví dụ: "~4 tỷ")
-- `area`: Diện tích (ví dụ: "100 m²")
-- `price_per_m2`: Giá trên m² (ví dụ: "40 triệu/m²")
+`title`: Tiêu đề tin đăng
 
-### Hình ảnh
-- `images`: Danh sách URL ảnh (array)
-- `thumbnail`: URL ảnh thumbnail (có thể rỗng)
+`content`: Nội dung mô tả chi tiết
 
-### Thông tin đăng tin
-- `posted_date`: Ngày đăng (từ config, ví dụ: "16/11/2025")
-- `agent_name`: Tên đại lý (có thể rỗng)
-- `agent_phone`: Số điện thoại đại lý (có thể rỗng)
+`status`: Trạng thái tin đăng (1 = hoạt động)
 
-### Thông tin chi tiết
-- `specs`: Đặc điểm bất động sản (dict, ví dụ: {"Khoảng giá": "40 triệu/m²", "Diện tích": "100 m²", "Hướng nhà": "Đông - Nam", ...})
-- `config`: Thông tin cấu hình tin đăng (dict, chứa: "Ngày đăng", "Ngày hết hạn", "Loại tin", "Mã tin")
+## Thông tin danh mục & loại hình
 
-### Thông tin bản đồ
-- `map_coords`: Tọa độ bản đồ dạng decimal (lat,lng, ví dụ: "20.9742669097552,105.52710803129803")
-- `map_link`: Link Google Maps embed
-- `map_dms`: Tọa độ bản đồ dạng độ-phút-giây (ví dụ: "20°58'27.36\" N, 105°31'37.59\" E")
+`real_estate_type_id`: ID loại bất động sản
+
+`sale_type`: Loại giao dịch (sell / rent)
+
+`demand_id`: ID nhu cầu
+
+## Thông tin vị trí
+
+`province_id`: ID tỉnh/thành phố
+
+`district_id`: ID quận/huyện
+
+`ward_id`: ID phường/xã (có thể null)
+
+`address_detail`: Địa chỉ dạng văn bản
+
+`lat_long`: Tọa độ dạng "lat,lng"
+
+## Thông tin giá và diện tích
+
+`price`: Giá tổng (đơn vị VND, kiểu số nguyên)
+
+`price_unit`: Đơn vị giá (1 = tổng, 2 = theo m²)
+
+`area`: Diện tích số (float)
+
+`area_unit`: "m2"
+
+## Hình ảnh
+
+`images`: Danh sách URL ảnh (array)
+
+## Thông tin liên hệ
+
+`contact_type`: Loại người bán (1 = môi giới, 2 = chính chủ)
+
+`contact_name`: Tên người liên hệ
+
+`contact_phone_number`: Số điện thoại
+
+## Thông tin pháp lý
+
+`infomation_legal_docs_id`: ID loại giấy tờ pháp lý
+
+## Thông tin khác
+
+`other_info.pid`: Mã tin (trùng real_estate_code)
+
+`other_info.href`: URL chi tiết bài đăng
 
 ## Tính năng
 
