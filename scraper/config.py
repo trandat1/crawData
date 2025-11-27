@@ -18,7 +18,7 @@ SCREENSHOT_DIR = "screenshots_blocked"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = PROJECT_ROOT / "output"
 OUTPUT_DIR_FILTER = OUTPUT_DIR / "output_filtered"
-
+OUTPUT_DIR_IMAGES = PROJECT_ROOT / "images"
 
 def ensure_directories():
     """Create top-level directories required for scraping."""

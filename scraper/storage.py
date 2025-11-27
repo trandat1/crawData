@@ -6,7 +6,9 @@ import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable, Tuple
-
+import requests
+from urllib.parse import urlparse
+from . import config
 
 def _update_sets_from_items(
     items: Iterable[dict[str, Any]],
@@ -464,6 +466,32 @@ def transform_to_example_format(item: dict[str, Any]) -> dict[str, Any]:
     return cleaned_output
 
 
+def download_image(url: str, base_folder=config.OUTPUT_DIR_IMAGES) -> str:
+    # Parse URL -> lấy path không có domain
+    parsed = urlparse(url)
+    relative_path = parsed.path.lstrip("/")  # vd: 2025/11/24/xxx.jpg
+
+    # Absolute path để lưu file
+    abs_file_path = Path(base_folder) / relative_path
+
+    # Nếu file đã tồn tại -> trả về relative path luôn
+    if abs_file_path.exists():
+        return str(abs_file_path.relative_to(config.PROJECT_ROOT))
+
+    # Tạo thư mục nếu chưa có
+    abs_file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Tải ảnh
+    response = requests.get(url)
+    abs_file_path.write_bytes(response.content)
+
+    # Convert absolute → relative so với PROJECT_ROOT
+    rel_path = abs_file_path.relative_to(config.PROJECT_ROOT)
+
+    # Trả về dạng string: "images/2025/11/24/xxx.jpg"
+    return str(rel_path)
+
+
 def save_results(
     results: list[dict[str, Any]],
     results_file: str,
@@ -500,6 +528,14 @@ def save_results(
     # Transform sang format example.json
     transformed_data = [transform_to_example_format(item) for item in final]
     
+    # Tải ảnh về local
+    for item in transformed_data:
+        if item.get("images"):
+            item["images_local_paths"] = []
+            for img in item["images"]:
+                item['images_local_paths'].append(download_image(img))
+                                
+                
     # Wrap trong object với key "data"
     output = {"data": transformed_data}
     
