@@ -107,6 +107,7 @@ def _extract_specs(driver):
 
 
 def _extract_images(driver):
+    return []
     images: list[str] = []
     try:
         thumbs = driver.find_elements(By.CSS_SELECTOR, ".re__media-thumbs img")

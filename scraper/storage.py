@@ -138,11 +138,22 @@ def _parse_number_from_text(text: str) -> float | None:
 
 
 def _extract_area_number(area_text: str) -> float | None:
-    """Extract số diện tích từ text (ví dụ: '100 m²' -> 100.0)."""
     if not area_text:
         return None
-    match = re.search(r'(\d+(?:\.\d+)?)', str(area_text))
+
+    text = str(area_text).strip()
+
+    # Trường hợp có dấu chấm phân tách nghìn (ví dụ VN)
+    if re.search(r'\d+\.\d{3}\b', text):  # match kiểu 8.800 hoặc 12.500, 120.000
+        clean = text.replace('.', '').replace(',', '.')
+        match = re.search(r'(\d+(?:\.\d+)?)', clean)
+        return float(match.group(1)) if match else None
+
+    # Trường hợp số thập phân: 8.8 hoặc 8,8
+    text = text.replace(',', '.')
+    match = re.search(r'(\d+(?:\.\d+)?)', text)
     return float(match.group(1)) if match else None
+
 
 
 def _extract_bedroom_bathroom_floor(specs: dict, config: dict) -> tuple[int | None, int | None, int | None]:
@@ -409,8 +420,8 @@ def transform_to_example_format(item: dict[str, Any]) -> dict[str, Any]:
         "handover_year": None,  # Có thể có trong specs/config
         "area": area_number,
         "area_unit": "m2" if area_number else None,
-        "price": int(price_number) if price_number else None,
-        "price_unit": price_unit,
+        "price": int(price_number) if price_number else 0,
+        "price_unit": price_unit if price_unit else 0,
         "bedroom": bedroom,
         "bathroom": bathroom,
         "floor": floor,
