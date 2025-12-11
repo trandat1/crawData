@@ -107,7 +107,7 @@ def _extract_specs(driver):
 
 
 def _extract_images(driver):
-    return []
+    # return []
     images: list[str] = []
     try:
         thumbs = driver.find_elements(By.CSS_SELECTOR, ".re__media-thumbs img")
@@ -155,7 +155,8 @@ def _extract_phone(driver, wait, human_sleep: Callable[[float, float], None]):
             contact_name = contact_name.strip()
         except:
             pass
-        
+        return "", contact_name
+    
         driver.execute_script("arguments[0].scrollIntoView({behavior:'smooth',block:'center'});", btn)
         human_sleep(0.5, 1.0)
         try:
@@ -172,7 +173,7 @@ def _extract_phone(driver, wait, human_sleep: Callable[[float, float], None]):
     except Exception:
         phone_text = ""
         contact_name = ""
-    return phone_text, contact_name
+    return "", contact_name
 
 
 def _extract_map(driver, wait):
@@ -342,6 +343,7 @@ def open_detail_and_extract(
     config = _extract_config(driver)
     item["config"] = config
     item["posted_date"] = config.get("Ngày đăng", "")
+    item["expiration_date"] = config.get("Ngày hết hạn", "")
 
     item["specs"] = specs_map
     phone_text, contact_name = _extract_phone(driver, wait, human_sleep)

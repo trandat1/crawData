@@ -4,10 +4,10 @@ import os
 
 # === Config mặc định ===
 DEBUGGER_ADDRESS = "127.0.0.1:9222"
-BASE_URL = "https://batdongsan.com.vn/ban-dat"   # hoặc list URL
-MAX_PAGES = 5
-MAX_ITEMS_PER_PAGE = 20
-PAGE_COOLDOWN_SECONDS = 5 * 60
+BASE_URL = "https://batdongsan.com.vn/ban-dat-nen-du-an-bac-giang"   # hoặc list URL
+MAX_PAGES = 1
+MAX_ITEMS_PER_PAGE = 1
+PAGE_COOLDOWN_SECONDS = 1 * 60
 PAGE_LOAD_TIMEOUT = 60
 WAIT_TIMEOUT = 20
 LIST_SCROLL_STEPS = 6

@@ -9,6 +9,7 @@ from typing import Any, Iterable, Tuple
 import requests
 from urllib.parse import urlparse
 from . import config
+from .utils import normalize_text
 
 def _update_sets_from_items(
     items: Iterable[dict[str, Any]],
@@ -119,8 +120,8 @@ def _parse_number_from_text(text: str) -> float | None:
         return None
     
     # Loại bỏ dấu phẩy, chấm (trừ dấu chấm thập phân)
-    text_clean = text.replace(",", "").strip()
-    
+    text_clean = text.replace(",", ".")
+
     # Tìm số
     match = re.search(r'(\d+(?:\.\d+)?)', text_clean)
     if not match:
@@ -242,7 +243,7 @@ def transform_to_example_format(item: dict[str, Any]) -> dict[str, Any]:
         # Item đã ở format mới, không cần transform lại
         return item
     
-    from .mapping import get_mapping
+    from .mapping import get_mapping,find_ward_key_loose
     
     specs = item.get("specs", {})
     config = item.get("config", {})
@@ -304,8 +305,12 @@ def transform_to_example_format(item: dict[str, Any]) -> dict[str, Any]:
     title_lower = title.lower() if title else ""
     
     # Tìm trong URL trước
-    for key in ["chung-cu", "can-ho", "nha-rieng", "biet-thu", "nha-mat-pho", 
-                "shophouse", "dat", "condotel", "kho", "nha-xuong", "trang-trai"]:
+    for key in ["nha-mat-pho-mat-tien", "nha-ngo-hem", "nha-biet-thu", "nha-pho-lien-ke", "nha-vuon", 
+                "nha-thanh-ly", "nha-o-xa-hoi", "can-ho-chung-cu", "can-ho-duplex", "can-ho-penthouse", "can-ho-tap-the-cu-xa", 'dat-nen-dat-tho-cu',
+                "dat-nen-du-an", "dat-nong-nghiep", "dat-cong-nghiep", "dat-thuong-mai-dich-vu", "dat-thanh-ly",
+                "condotel", "homestay", "farmstay", "khach-san", "resort", "van-phong", "shophouse",
+                "kho-nha-xuong","phong-tro", "mat-bang-kinh-doanh"
+                ]:
         if key in href_lower:
             # Map từ slug
             real_estate_type_id = get_mapping("real_estate_type_id", key)
@@ -332,21 +337,30 @@ def transform_to_example_format(item: dict[str, Any]) -> dict[str, Any]:
     province_id = None
     district_id = None
     ward_id = None
-    
+    province_name = ""
+    district_name = ""  
     if location:
         location_parts = [part.strip() for part in location.split(",") if part.strip()]
         # Thường format: "Phường/Xã, Quận/Huyện, Tỉnh/Thành phố"
         # Hoặc: "Đường, Phường/Xã, Quận/Huyện, Tỉnh/Thành phố"
         
         # Tìm từ cuối lên (tỉnh/thành phố thường ở cuối)
-        for part in reversed(location_parts):
-            part_clean = part.strip()
-            if not province_id:
-                province_id = get_mapping("province_id", part_clean)
-            if not district_id:
-                district_id = get_mapping("district_id", part_clean)
-            if not ward_id:
-                ward_id = get_mapping("ward_id", part_clean)
+    for part in reversed(location_parts):
+        part_clean = part.strip()
+        if not province_id:
+            province_id = get_mapping("province_id", part_clean)
+            if province_id is not None:  # Chỉ lưu nếu thành công
+                province_name = part_clean
+        if not district_id:
+            district_id = find_ward_key_loose("district_mapping.json", name = location_parts[-2], province_id=province_id)
+
+                
+        # 3) Ward detection – ALWAYS TRY WARD BEFORE DISTRICT IF MATCH EXISTS
+
+            # context filter (province + district if known)
+    if not ward_id and district_id and province_id:
+        ward_id = int(find_ward_key_loose("ward_mapping.json",name = location_parts[-3], province_id=province_id, district_id=district_id))
+
     
     # Map các infomation_* từ specs và config
     infomation_legal_docs_id = None
@@ -477,30 +491,30 @@ def transform_to_example_format(item: dict[str, Any]) -> dict[str, Any]:
     return cleaned_output
 
 
-def download_image(url: str, base_folder=config.OUTPUT_DIR_IMAGES) -> str:
-    # Parse URL -> lấy path không có domain
-    parsed = urlparse(url)
-    relative_path = parsed.path.lstrip("/")  # vd: 2025/11/24/xxx.jpg
+# def download_image(url: str, base_folder=config.OUTPUT_DIR_IMAGES) -> str:
+#     # Parse URL -> lấy path không có domain
+#     parsed = urlparse(url)
+#     relative_path = parsed.path.lstrip("/")  # vd: 2025/11/24/xxx.jpg
 
-    # Absolute path để lưu file
-    abs_file_path = Path(base_folder) / relative_path
+#     # Absolute path để lưu file
+#     abs_file_path = Path(base_folder) / relative_path
 
-    # Nếu file đã tồn tại -> trả về relative path luôn
-    if abs_file_path.exists():
-        return str(abs_file_path.relative_to(config.PROJECT_ROOT))
+#     # Nếu file đã tồn tại -> trả về relative path luôn
+#     if abs_file_path.exists():
+#         return str(abs_file_path.relative_to(config.PROJECT_ROOT))
 
-    # Tạo thư mục nếu chưa có
-    abs_file_path.parent.mkdir(parents=True, exist_ok=True)
+#     # Tạo thư mục nếu chưa có
+#     abs_file_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Tải ảnh
-    response = requests.get(url)
-    abs_file_path.write_bytes(response.content)
+#     # Tải ảnh
+#     response = requests.get(url)
+#     abs_file_path.write_bytes(response.content)
 
-    # Convert absolute → relative so với PROJECT_ROOT
-    rel_path = abs_file_path.relative_to(config.PROJECT_ROOT)
+#     # Convert absolute → relative so với PROJECT_ROOT
+#     rel_path = abs_file_path.relative_to(config.PROJECT_ROOT)
 
-    # Trả về dạng string: "images/2025/11/24/xxx.jpg"
-    return str(rel_path)
+#     # Trả về dạng string: "images/2025/11/24/xxx.jpg"
+#     return str(rel_path)
 
 
 def save_results(
@@ -539,12 +553,12 @@ def save_results(
     # Transform sang format example.json
     transformed_data = [transform_to_example_format(item) for item in final]
     
-    # Tải ảnh về local
-    for item in transformed_data:
-        if item.get("images"):
-            item["images_local_paths"] = []
-            for img in item["images"]:
-                item['images_local_paths'].append(download_image(img))
+    # # Tải ảnh về local
+    # for item in transformed_data:
+    #     if item.get("images"):
+    #         item["images_local_paths"] = []
+    #         for img in item["images"]:
+                # item['images_local_paths'].append(download_image(img))
                                 
                 
     # Wrap trong object với key "data"

@@ -1,6 +1,12 @@
 import time
 from random import uniform   
 from datetime import datetime
+import unicodedata
+
+def normalize_text(text):
+    text = unicodedata.normalize('NFD', text)
+    text = text.encode('ascii', 'ignore').decode('utf-8')
+    return text.lower().strip()
 
 def human_sleep(a: float = 3, b: float = 8):
     time.sleep(uniform(a, b))
